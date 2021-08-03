@@ -126,6 +126,7 @@ Plug 'junegunn/gv.vim'
 " Plug 'terryma/vim-smooth-scroll'
 Plug 'plasticboy/vim-markdown'
 Plug 'iamcco/markdown-preview.nvim', { 'do': { -> mkdp#util#install() }, 'for': ['markdown', 'vim-plug']}
+Plug 'Vimjas/vim-python-pep8-indent' " python 缩进
 " Plug 'MarcWeber/vim-addon-mw-utils'
 " Plug 'tomtom/tlib_vim'
 " Plug 'garbas/vim-snipmate'
@@ -204,6 +205,7 @@ let g:ycm_clangd_args=['--header-insertion=never']
 let g:ycm_clangd_binary_path='/usr/local/bin/clangd'
 let g:ycm_show_diagnostics_ui = 1
 let g:ycm_confirm_extra_conf = 0
+let g:ycm_auto_hover = ''
 " let g:ycm_global_ycm_extra_conf = '~/.vim/plugged/YouCompleteMe/.ycm_extra_conf.py'
 " let g:ycm_global_ycm_extra_conf = '~/.ycm_extra_conf.py'
 let g:ycm_error_symbol = '✗'
@@ -222,10 +224,12 @@ let g:ycm_semantic_triggers =  {
 nnoremap <leader>U :YcmCompleter GoToDeclaration<cr>
 nnoremap <leader>u :YcmCompleter GoToDefinition<cr> 
 nnoremap <leader>o :YcmCompleter GoToInclude<cr>
-" nnoremap <leader>ff :YcmCompleter FixIt<cr>
+nnoremap <leader>ff :YcmCompleter FixIt<cr>
+nmap <leader>h <plug>(YCMHover)
 
 " LeaderF
-nnoremap <leader>f :LeaderfFile ~/<cr>
+" <leader>f -> search from current path
+nnoremap <leader><leader>f :LeaderfFile ~/<cr>
 let g:Lf_WildIgnore = {
             \ 'dir': ['.svn','.git','.hg','.vscode','.wine','.deepinwine','.oh-my-zsh'],
             \ 'file': ['*.sw?','~$*','*.bak','*.exe','*.o','*.so','*.py[co]']
@@ -243,6 +247,9 @@ nmap ga <Plug>(EasyAlign)
 
 " git-blame
 nnoremap <Leader>b :<C-u>call gitblame#echo()<CR>
+
+" AsyncRun
+let $PYTHONUNBUFFERED=1
 
 " ack
 let g:ack_focus_after_search = 1
@@ -414,6 +421,9 @@ function! RunCode()
         silent execute ":copen"
     elseif &filetype == 'go'
         silent execute ":AsyncRun -strip -raw go run " . expand("%:p")
+        silent execute ":copen"
+    elseif &filetype == 'python'
+        silent execute ":AsyncRun -strip -raw python3 " . expand("%:p")
         silent execute ":copen"
     endif
 endfunction
