@@ -387,15 +387,26 @@ function! s:close_current_buffer()
 endf
 
 function! s:close_current_window()
+    let l:curr = bufnr('%')
+    let l:exist_bufsize = len(filter(range(1, bufnr('$')), 'buflisted(v:val)'))
+    let l:ignore_buffers = ["nerdtree","tagbar","qf"]
+    let l:ig_size = len(filter(range(1,winnr('$')), "index(l:ignore_buffers, getbufvar(winbufnr(v:val), '&ft'))>=0"))
+    let l:nig_size = len(filter(range(1,winnr('$')), "index(l:ignore_buffers, getbufvar(winbufnr(v:val), '&ft'))<0"))
+    if l:nig_size == 1 && l:exist_bufsize > l:ig_size + 1 && index(l:ignore_buffers, getbufvar(l:curr, '&ft')) < 0
+        execute ":bn"
+        execute ":bd " . l:curr
+        return
+    endif
+
     if winnr('$') > 1
         execute ":close"
-    " elseif len(getbufinfo({'buflisted':1})) == 1
-    elseif len(filter(range(1, bufnr('$')), 'buflisted(v:val)')) == 1
+    elseif l:exist_bufsize == 1
         execute ":q"
     else
-        execute ":bd"
+        execute ":bd " . l:curr
     endif
 endf
+
 
 " nnoremap <silent> <c-p> :bp \| if &filetype == 'deol' \| bp \| endif<cr>
 " nnoremap <silent> <c-n> :bn \| if &filetype == 'deol' \| bn \| endif<cr>
