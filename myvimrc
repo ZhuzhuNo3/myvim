@@ -247,7 +247,7 @@ let g:tagbar_type_go = {
 
 " YCM
 let g:ycm_clangd_args=['--header-insertion=never']
-let g:ycm_gopls_binary_path='/Users/zz/Code/go/bin/gopls'
+let g:ycm_gopls_binary_path='/Users/zhuzhou/Code/go/bin/gopls'
 let g:ycm_clangd_binary_path='/usr/local/bin/clangd'
 let g:ycm_show_diagnostics_ui = 1
 let g:ycm_confirm_extra_conf = 0
@@ -257,6 +257,7 @@ let g:ycm_auto_hover = ''
 let g:ycm_error_symbol = '✗'
 let g:ycm_warning_symbol = '✹'
 " let g:ycm_seed_identifiers_with_syntax = 1 
+let g:ycm_echo_current_diagnostic = 'virtual-text'
 let g:ycm_complete_in_comments = 1 
 let g:ycm_complete_in_strings = 1 
 let g:ycm_collect_identifiers_from_tags_files = 1
@@ -344,7 +345,7 @@ let g:mkdp_path_to_chrome = "/Applications/Google\\ Chrome.app/Contents/MacOS/Go
 let g:vim_markdown_toc_autofit = 1
 let g:vim_markdown_math = 1
 " let g:mkdp_markdown_css='githubdiy.css'
-let g:mkdp_markdown_css="/Users/zz/Library/Application\\ Support/abnerworks.Typora/themes/githubdiy.css"
+let g:mkdp_markdown_css="/Users/zhuzhou/Library/Application\\ Support/abnerworks.Typora/themes/githubdiy.css"
 let g:mkdp_auto_close = 0
 nmap <silent> <F7> <Plug>MarkdownPreview
 imap <silent> <F7> <Plug>MarkdownPreview
@@ -352,6 +353,87 @@ nmap <silent> <F8> <Plug>MarkdownPreviewStop
 imap <silent> <F8> <Plug>MarkdownPreviewStop
 
 " >>> 瞎折腾产物 <<<
+
+" 编辑golang代码时，按ESC自动格式化
+function! KeepView(f, ...)
+  " 保存未命名寄存器
+  let l:save_unnamed_register = getreg('')
+  " 保存当前视图状态
+  let l:save_view = winsaveview()
+  " 请求方法
+  call call(a:f, a:000)
+  " 恢复视图状态
+  call winrestview(l:save_view)
+  " 恢复未命名寄存器
+  call setreg('', l:save_unnamed_register)
+endfunction
+
+function! ResetLine(start_pos, old, new)
+  if a:old == a:new
+    return
+  endif
+  if a:old > a:new
+    execute (a:start_pos+a:new) . ',' . (a:start_pos+a:old-1) . 'd _'
+    return
+  endif
+  call append(a:start_pos+a:old-1, repeat([''], a:new-a:old))
+endfunction
+
+function! GetGlobalGoDef(line)
+  if a:line < 1
+    return 1
+  endif
+  if a:line > line('$')
+    return line('$')
+  endif
+  call cursor(a:line, 0)
+  let l:ans = search('^\%(func\|const\|var\|type\)\>', 'bcnW')
+  if l:ans < 1
+    return 1
+  endif
+  return l:ans
+endfunction
+
+function! GetGlobalGoDefEnd(line)
+  if a:line < 0
+    return 0
+  endif
+  if a:line > line('$')
+    return line('$')
+  endif
+  call cursor(a:line, strlen(getline(a:line)))
+  let l:end_pos = search('^}', 'cnW')
+  if l:end_pos == 0
+    let l:end_pos = line('$')
+  endif
+  return l:end_pos
+endfunction
+
+function! FormatGoCode()
+  " 查找当前光标所在位置的函数、定义开始
+  let l:start_pos = GetGlobalGoDef(line('.'))
+  " 查找结束位置
+  let l:end_pos = GetGlobalGoDefEnd(l:start_pos)
+  " 向上下进行扩充
+  let l:start_pos = GetGlobalGoDef(l:start_pos-1)
+  let l:end_pos = GetGlobalGoDefEnd(l:end_pos+1)
+  " 使用 gofmt 格式化代码
+  let l:formatted = system('gofmt', join(getline(l:start_pos, l:end_pos), "\n"))
+  " 检查 gofmt 是否执行成功
+  if v:shell_error != 0
+    return
+  endif
+  " 将格式化的结果分割成行列表
+  let l:lines = split(l:formatted, "\n", 1)
+  " 确保行数正确
+  call ResetLine(l:start_pos, l:end_pos-l:start_pos+1, len(l:lines))
+  " 替换缓冲区内容至新的行数或当前行数的最小值
+  call setline(l:start_pos, l:lines)
+  " 保存
+  write
+endfunction
+
+autocmd FileType go inoremap <silent><buffer> <Esc> <Esc>:call KeepView('FormatGoCode')<CR>
 
 " 格式化Json
 nnoremap <silent> <leader>j :execute '%!jq -M --indent 2' \| :set ft=json \| :1<cr>
